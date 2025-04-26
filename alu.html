@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gelişmiş ALU Simülatörü</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin-top: 30px; }
+        input, select, button { margin: 10px; padding: 10px; font-size: 16px; }
+        .binary-display { margin-top: 10px; font-size: 14px; color: darkblue; }
+        .wave {
+            width: 100%;
+            height: 50px;
+            margin-top: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .wave::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                #4CAF50 0 10px,
+                transparent 10px 20px
+            );
+            animation: waveMove 1s linear infinite;
+        }
+        @keyframes waveMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔵 Gelişmiş Basit ALU (Arithmetic Logic Unit) Simülatörü</h1>
+
+    <div>
+        <input type="number" id="a" placeholder="A sayısı (0-255)">
+        <div class="binary-display" id="a-binary"></div>
+
+        <input type="number" id="b" placeholder="B sayısı (0-255)">
+        <div class="binary-display" id="b-binary"></div>
+    </div>
+
+    <div>
+        <select id="operation">
+            <option value="add">Toplama</option>
+            <option value="sub">Çıkarma</option>
+            <option value="mul">Çarpma</option>
+            <option value="div">Bölme</option>
+            <option value="and">AND</option>
+            <option value="or">OR</option>
+            <option value="xor">XOR</option>
+            <option value="not">NOT</option>
+        </select>
+    </div>
+
+    <div>
+        <button onclick="calculate()">İşlemi Yap</button>
+    </div>
+
+    <h2 id="result">Sonuç: </h2>
+
+    <div class="wave" id="wave" style="display: none;"></div>
+
+    <script>
+        function updateBinaryDisplays() {
+            const a = parseInt(document.getElementById('a').value) || 0;
+            const b = parseInt(document.getElementById('b').value) || 0;
+            document.getElementById('a-binary').innerText = "A (Binary): " + a.toString(2).padStart(8, '0');
+            document.getElementById('b-binary').innerText = "B (Binary): " + b.toString(2).padStart(8, '0');
+        }
+
+        function calculate() {
+            updateBinaryDisplays(); // Giriş binary gösterimi güncelle
+            document.getElementById('wave').style.display = 'block'; // Dalga animasyonu göster
+
+            setTimeout(() => { // Küçük bir gecikme simülasyonu
+                const a = parseInt(document.getElementById('a').value) || 0;
+                const b = parseInt(document.getElementById('b').value) || 0;
+                const op = document.getElementById('operation').value;
+                let result = 0;
+
+                switch (op) {
+                    case "add":
+                        result = (a + b) & 0xFF;
+                        break;
+                    case "sub":
+                        result = (a - b) & 0xFF;
+                        break;
+                    case "mul":
+                        result = (a * b) & 0xFF;
+                        break;
+                    case "div":
+                        if (b === 0) {
+                            document.getElementById('result').innerText = "Sonuç: HATA (0'a bölme)";
+                            document.getElementById('wave').style.display = 'none';
+                            return;
+                        } else {
+                            result = Math.floor(a / b) & 0xFF;
+                        }
+                        break;
+                    case "and":
+                        result = a & b;
+                        break;
+                    case "or":
+                        result = a | b;
+                        break;
+                    case "xor":
+                        result = a ^ b;
+                        break;
+                    case "not":
+                        result = (~a) & 0xFF;
+                        break;
+                    default:
+                        result = 0;
+                }
+
+                document.getElementById('result').innerText = "Sonuç: " + result + " (Binary: " + result.toString(2).padStart(8, '0') + ")";
+                document.getElementById('wave').style.display = 'none'; // İşlem bitince dalga gizle
+            }, 1000); // 1 saniye dalga animasyonu göster
+        }
+
+        // Giriş değişince binary gösterimini otomatik güncelle
+        document.getElementById('a').addEventListener('input', updateBinaryDisplays);
+        document.getElementById('b').addEventListener('input', updateBinaryDisplays);
+    </script>
+
+</body>
+</html>

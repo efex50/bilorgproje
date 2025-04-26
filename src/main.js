@@ -1,29 +1,43 @@
 import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { init_table } from './ram.js'
+import CodeEditor from './components/editor/editor.js'
+import Input from './components/input/input.js'
 import { main } from './start.js'
+import { Registers, StoredObjects, Table } from './objects.js'
+import { html, render } from 'lit-html';
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    `
-    // table div row
-    +`
+render(html`
+  <div class="w3-row">
+    <div class="w3-container w3-quarter scrollable-div">
+      <div id="cache1-div"></div>
+    </div>
+    <div class="w3-container w3-quarter scrollable-div">
     <div id="ram-div"></div>
-    <div id="cache-div"></div>
+    <div id="register-div"></div>
+    </div> 
   </div>
-`
+`, document.querySelector('#app'));
 
 document.addEventListener('DOMContentLoaded', () => {
-  init_table(5,5);
-  main();
+  const app = document.querySelector('#app');
+
+  // let editor = CodeEditor("as");
+  // app.appendChild(editor);
+
+  let reg = new Registers();
+  console.log(reg);
+
+
+  let inputf = Input();
+  app.appendChild(inputf);
+  let ram = new Table(8,8,"ram","ram-div");
+  ram.init();
+  ram.render();
+  StoredObjects["ram"] = ram;
+  let cache = new Table(8,2,"cache","cache1-div");    
+  cache.init();
+  cache.render();
+  StoredObjects["cache1"] = cache;
+  //main();
 });
 
 
