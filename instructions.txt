@@ -1,0 +1,56 @@
+mov: veriyi değiştir
+mov ör:
+mov 0x0 rax
+mov rax 0x0
+mov 0x0 0x5
+
+
+lea: dereferans
+lea ör:
+lea rax, rax // rax'in işaret ettiği veriyi rax'e yazar
+
+
+
+test:tek girdi ile zero veya negatif flagları belirler
+test ör:
+test rax
+test 0x0
+
+
+cmp: iki veriyi karşılaştırır
+cmp ör:
+cmp rax rbx
+cmp rax 0x01
+cmp 0x10 rbx
+
+
+jmp: zıplar
+jmp _label_
+
+jne: not equal
+je : equal
+jz : if zero
+jnz: if not zero
+jg : greater
+jge: greater equal
+jl : lesser
+jle: lesser equal
+
+
+call: fonksiyon çağrısı
+call ör:
+call _fun
+
+labellar: çağrı labelları
+label ör:
+_start:
+mov 0x0 0x1
+jmp _start
+
+
+imm: kullanıcı verisi yaz
+imm target data
+
+imm ör:
+imm rax 1033
+imm 0x10 0x42

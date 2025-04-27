@@ -1,33 +1,73 @@
-import './style.css';
+import { codeTable } from '../../objects';
+import './style.css'; 
+import {EditorView, basicSetup} from "codemirror"
 
-// catgpt yazdı
-export default function CodeEditor(idName = 'codeArea') {
-  const container = document.createElement('div');
-  container.className = 'editor-container';
+export default function createEditor() {
+  // Initialize CodeMirror editor
+  
+  const container = document.createElement("div");
+  container.className = "code-editor-wrapper";
+  container.id = "code-area-container";
 
-  const lineNumbers = document.createElement('div');
-  lineNumbers.className = 'line-numbers';
-  lineNumbers.id = 'lineNumbers';
-  lineNumbers.innerHTML = '<span>1</span>';
+  const wrapper = document.createElement("div");
+  wrapper.className = "editor-code-area";
+  wrapper.id = "code-textbox-area";
+  
+  const buttonContainer = document.createElement("div");
+  buttonContainer.className = "editor-button-area";
 
-  const textarea = document.createElement('textarea');
-  textarea.id = 'codeArea';
+  const runButton = document.createElement("button");
+  runButton.innerText = "Run";
+  runButton.className = "editor-button";
+  
+  buttonContainer.appendChild(runButton);
 
-  // Functions
-  function updateLines() {
-    const lines = textarea.value.split('\n').length;
-    lineNumbers.innerHTML = Array.from({ length: lines }, (_, i) => `<span>${i + 1}</span>`).join('');
+  container.appendChild(buttonContainer);
+  container.appendChild(wrapper);
+
+  const view = new EditorView({
+    doc: "Start document\nasasd",
+    parent: wrapper,
+    extensions: [
+      basicSetup,
+    ]
+  })
+  codeTable["t"] = view;
+
+  function clearText() {
+    view.dispatch({
+      changes: {from: 0, to: view.state.doc.length, insert: ""}
+    })
   }
 
-  function syncScroll() {
-    lineNumbers.scrollTop = textarea.scrollTop;
+  // e = {line:number}
+  container.addEventListener("highlight", (e) => {
+    
+    console.log("ZORT",e.detail.line)
+  })
+
+  container.addEventListener("clear", (e) => {
+    clearText();    
+  })
+
+  
+
+  // Event listener to highlight the line when selected
+
+  // Function to highlight the selected line
+  function highlightLine(editor) {
+    const line = editor.getCursor().line; // Get the current line
+    const allLines = editor.getDoc().lineCount(); // Get total line count
+    editor.getDoc().removeAllMarks(); // Clear previous highlights
+    
+    // Add a new highlight to the selected line
+    editor.getDoc().markText(
+      { line: line, ch: 0 },
+      { line: line + 1, ch: 0 },
+      { className: 'highlight-line' }
+    );
   }
 
-  textarea.addEventListener('input', updateLines);
-  textarea.addEventListener('scroll', syncScroll);
-
-  container.appendChild(lineNumbers);
-  container.appendChild(textarea);
 
   return container;
 }

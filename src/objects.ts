@@ -1,3 +1,5 @@
+import { EditorView } from "codemirror";
+
   
 
 export let StoredObjects = {};
@@ -29,8 +31,8 @@ export class Table{
             
             const newRows:Content[] = [];
             for (let j = 0; j < this.cols; j++) {
-                
-                newRows.push({ content: `${i + 1},${j + 1}`,id:ctr }); // Add cell content
+                let c = this.contentGen({ctr,i,j});
+                newRows.push(c); // Add cell content
                 ctr+=1;
             }
             tableData.push(newRows);
@@ -49,16 +51,24 @@ export class Table{
         if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) {
             throw new Error('Invalid line or row index');
         }
-        console.log(row,col);
-        console.log(this.name);
         
         this.arr[row][col].content = context;
-        this.render();
+        let textctx = this.RenderCell(this.arr[row][col]); // Get the prefix render
+        {
+            const cellId = this.cellIdGen(row,col);
+            const cell = document.getElementById(cellId);
+            if (cell) {
+                cell.innerHTML = textctx; // Set cell content
+            }
+        }
+
         // 🛠 Trigger animation on the real cell
         const cellId = this.cellIdGen(row,col);
         const cell = document.getElementById(cellId);
         if (cell) {
-            
+            cell.innerHTML = textctx; // Set cell content
+
+            cell.classList.remove('glow-effect-get'); //
             cell.classList.remove('glow-effect-set'); // Restart animation trick
             void cell.offsetWidth;                // Force reflow
             cell.classList.add('glow-effect-set');    // Add the class
@@ -74,12 +84,16 @@ export class Table{
         if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) {
             throw new Error('Invalid line or row index');
         }
-
-            // 🛠 Trigger animation on the real cell
+        console.log("lan");
+        
+        // 🛠 Trigger animation on the real cell
         const cellId = this.cellIdGen(row,col);
+        
         const cell = document.getElementById(cellId);
+        
         if (cell) {
             cell.classList.remove('glow-effect-get'); // Restart animation trick
+            cell.classList.remove('glow-effect-set'); //
             void cell.offsetWidth;                // Force reflow
             cell.classList.add('glow-effect-get');    // Add the class
         }
@@ -159,9 +173,17 @@ export class Table{
     
         return { row, col };
     }
+
+    // custom areas
+
     RenderCell(args:Content):string {
         
         return `<div class="red-text">0x${args.id.toString(16).padStart(2, '0')}:</div>${args.content}`;
+    }
+    contentGen(args:{ctr:number,i,j}):Content {
+        let {ctr,i,j} = args;
+        let a :Content =  { content: `${i + 1},${j + 1}`,id:ctr };
+        return a;
     }
     
 }
@@ -169,12 +191,15 @@ export class Table{
 export class Program{
 
 }
-class Content{
+export class Content{
     content: string;
     id: number; 
 }
+export let codeTable = {
+    
+};
 
-class Flags{
+export class Flags{
     zero: boolean = false;
     sign: boolean = false;
     carry: boolean = false;
@@ -193,71 +218,153 @@ export class Registers {
     private _r7: number = 0;
     private _r8: number = 0;
     private _r9: number = 0;
-    private _r10: number = 0;
     private _rsp: number = 0;
     private _rbp: number = 0;
+    private _ctr: number = 0;
 
-    table: Table = new Table(12, 1, "registers", "register-div");
+    table: Table = new Table(4, 3, "registers", "register-div");
 
     constructor() {
         this.table.RenderCell = function (args: Content): string {
             const registerNames = [
-                "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "rsp", "rbp"
+                "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "rsp", "rbp","ctr"
             ];
             const registerName = registerNames[args.id] || "unknown";
-            return `<div class="red-text">0x${args.id.toString(16).padStart(2, '0')}:</div>${registerName}: ${args.content}`;
+            return `<div class="red-text">${registerName}:</div> ${args.content}`;
         };
+
+        this.table.contentGen = function (args): Content {
+            let a: Content = { content: "0", id: args.ctr };
+            return a;
+        }
+
+
         this.table.init();
     }
 
+    get r1(): number {
+        this.table.getId(0);
+        return this._r1;
+    }
+    get r2(): number {
+        this.table.getId(1);
+        return this._r2;
+    }
+    get r3(): number {
+        this.table.getId(2);
+        return this._r3;
+    }
+    get r4(): number {
+        this.table.getId(3);
+        return this._r4;
+    }
+    get r5(): number {
+        this.table.getId(4);
+        return this._r5;
+    }
+    get r6(): number {
+        this.table.getId(5);
+        return this._r6;
+    }
+    get r7(): number {
+        this.table.getId(6);
+        return this._r7;
+    }
+    get r8(): number {
+        this.table.getId(7);
+        return this._r8;
+    }
+    get r9(): number {
+        this.table.getId(8);
+        return this._r9;
+    }
+    get rsp(): number {
+        this.table.getId(10);
+        return this._rsp;
+    }
+    get rbp(): number {
+        this.table.getId(11);
+        return this._rbp;
+    }
+    get ctr(): number {
+        this.table.getId(11);
+        return this._rbp;
+    }
+    
+
     set r1(value: number) {
         this._r1 = value;
-        this.table.setId(0, `r1: ${this._r1}`);
-    }
+        this.table.setId(0, `${this._r1}`);
+        }
     set r2(value: number) {
         this._r2 = value;
-        this.table.setId(1, `r2: ${this._r2}`);
-    }
+        this.table.setId(1, `${this._r2}`);
+        }
     set r3(value: number) {
         this._r3 = value;
-        this.table.setId(2, `r3: ${this._r3}`);
-    }
+        this.table.setId(2, `${this._r3}`);
+        }
     set r4(value: number) {
         this._r4 = value;
-        this.table.setId(3, `r4: ${this._r4}`);
-    }
+        this.table.setId(3, `${this._r4}`);
+        }
     set r5(value: number) {
         this._r5 = value;
-        this.table.setId(4, `r5: ${this._r5}`);
-    }
+        this.table.setId(4, `${this._r5}`);
+        }
     set r6(value: number) {
         this._r6 = value;
-        this.table.setId(5, `r6: ${this._r6}`);
-    }
+        this.table.setId(5, `${this._r6}`);
+        }
     set r7(value: number) {
         this._r7 = value;
-        this.table.setId(6, `r7: ${this._r7}`);
-    }
+        this.table.setId(6, `${this._r7}`);
+        }
     set r8(value: number) {
         this._r8 = value;
-        this.table.setId(7, `r8: ${this._r8}`);
-    }
+        this.table.setId(7, `${this._r8}`);
+        }
     set r9(value: number) {
         this._r9 = value;
-        this.table.setId(8, `r9: ${this._r9}`);
-    }
-    set r10(value: number) {
-        this._r10 = value;
-        this.table.setId(9, `r10: ${this._r10}`);
-    }
+        this.table.setId(8, `${this._r9}`);
+        }
     set rsp(value: number) {
         this._rsp = value;
-        this.table.setId(10, `rsp: ${this._rsp}`);
-    }
+        this.table.setId(10, `${this._rsp}`);
+        }
     set rbp(value: number) {
         this._rbp = value;
-        this.table.setId(11, `rbp: ${this._rbp}`);
+        this.table.setId(11, `${this._rbp}`);
+    }
+    set ctr(value: number) {
+        this.ctr = value;
+        this.table.setId(11, `${this._ctr}`);
     }
 
+    reset(): void {
+        this.r1 = 0;
+        this.r2 = 0;
+        this.r3 = 0;
+        this.r4 = 0;
+        this.r5 = 0;
+        this.r6 = 0;
+        this.r7 = 0;
+        this.r8 = 0;
+        this.r9 = 0;
+        this.rsp = 0;
+        this.rbp = 0;
+        this.ctr = 0;
+        this.table.render(); // Re-render the table
+    }
+
+}
+
+export enum CacheType {
+    FIFO,
+    LRU
+}
+
+export class Cache{
+    private _type : CacheType = CacheType.FIFO;// fifo , lru
 
 }

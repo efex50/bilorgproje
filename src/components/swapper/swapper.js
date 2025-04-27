@@ -1,37 +1,37 @@
-import {StoredObjects} from "../../objects.js";
+import {Content, StoredObjects} from "../../objects.js";
 import './style.css';
 
-export default function swapper() {
+export default function Swapper() {
     const container = document.createElement('div');
     container.className = 'tag-data-container';
   
     // Select input
     const selectNerden = document.createElement('select');
     selectNerden.className = 'id-tag-select';
+    
     const selectNereye = document.createElement('select');
     selectNereye.className = 'id-tag-select';
-    console.log(StoredObjects);
+
+    console.log(selectNerden);
+    console.log(selectNereye);
+    
     
     const options = ['ram'];
     options.forEach(opt => {
-      const optionElement = document.createElement('option');
-      optionElement.value = opt;
-      optionElement.textContent = opt;
-      selectNerden.appendChild(optionElement);
-      selectNereye.appendChild(optionElement);
+      selectNerden.appendChild(createOption(opt));
+      selectNereye.appendChild(createOption(opt));
     });
   
-    // Number input
-    const numberInput = document.createElement('input');
-    numberInput.type = 'string';
-    numberInput.placeholder = 'Yeni sayı gir';
-    numberInput.className = 'data-input';
-
     // id input
     const IdInput = document.createElement('input');
     IdInput.type = 'string';
     IdInput.placeholder = 'Sektörü gir';
     IdInput.className = 'data-input';
+    
+    const outInput = document.createElement('input');
+    outInput.type = 'string';
+    outInput.placeholder = 'Hedef Sektörü gir';
+    outInput.className = 'data-input';
     
 
     // Button
@@ -42,61 +42,72 @@ export default function swapper() {
     // Button click handler
     dataButton.addEventListener('click', () => {
         
-        const selectedId = selectNerden.value;
-        const value = parseSmartNumber(numberInput.value);
-        const id = parseSmartNumber(IdInput.value);
-        
-        // hata kontrolü
-        // todo!
-        if (isNaN(value)) {
-          console.log("Invalid number input Todo!");
-          
-        }
-        StoredObjects[selectedId].setId(id ,value);
+      const fromObj = selectNerden.value;
+      const targetObj = selectNereye.value;
+      let fromId = parseSmartNumber(IdInput.value);
+      let targetId = parseSmartNumber(outInput.value);
 
-        const targetDiv = document.getElementById(selectedId);
-  
-      if (targetDiv) {
-        targetDiv.textContent = value;
+      if (isNaN(fromId) || isNaN(targetId)) {
+        console.log("Invalid number input Todo!");
+        
       }
+      let tbw = StoredObjects[fromObj].getId(fromId);
+      console.log(tbw);
+      
+
+      StoredObjects[targetObj].setId(targetId ,tbw.content);
     });
     // options
-    selectNerden.addEventListener('click', () => {
-        const selectedId = selectNerden.value;
-        if (options.length === Object.keys(StoredObjects).length) {
-          return;          
-        }else{
-          let ctr = 0;
-          for (const key in StoredObjects) {
-            options[ctr] = key;
-            ctr++;
-          }
-          selectNerden.innerHTML = ''; // Clear existing options
-          options.forEach(opt => {
-            const optionElement = document.createElement('option');
-            optionElement.value = opt;
-            optionElement.textContent = opt;
-            selectNerden.appendChild(optionElement);
-            selectNereye.appendChild(optionElement);
-
-          });
-          
-          // Example: you could trigger something else here
-          // const event = new CustomEvent('optionSelected', {
-          //   detail: { id: selectedId }
-          // });
-          // container.dispatchEvent(event);
+    function updateOptions(){
+      const selectedId = selectNerden.value;
+      if (options.length === Object.keys(StoredObjects).length) {
+        return;          
+      }else{
+        let ctr = 0;
+        for (const key in StoredObjects) {
+          options[ctr] = key;
+          ctr++;
         }
-      });
-    
+        selectNerden.innerHTML = ''; // Clear existing options
+        selectNereye.innerHTML = ''; // Clear existing options
+
+        options.forEach(opt => {
+          selectNerden.appendChild(createOption(opt));
+          selectNereye.appendChild(createOption(opt));
+
+        });
+        
+        // Example: you could trigger something else here
+        // const event = new CustomEvent('optionSelected', {
+        //   detail: { id: selectedId }
+        // });
+        // container.dispatchEvent(event);
+      }
+
+    }
+    selectNerden.addEventListener('click', () => {
+      updateOptions();
+    });
+    selectNereye.addEventListener('click', () => {
+      updateOptions();
+    });
+
   
     // Assemble
-    container.appendChild(select);
+    container.appendChild(selectNerden);
+    container.appendChild(selectNereye);
     container.appendChild(IdInput);
-    container.appendChild(numberInput);
+    container.appendChild(outInput);
     container.appendChild(dataButton);
   
     return container;
+}
+
+  function createOption(opt) {
+    const option = document.createElement('option');
+    option.value = opt;
+    option.textContent = opt;
+    return option;
   }
   
 

@@ -1,41 +1,41 @@
-body {
-    margin: 20px;
-    font-family: monospace;
-    background: #f5f5f5;
-  }
-  .editor-container {
-    display: flex;
-    border: 1px solid #ccc;
-    background: #1e1e1e;
-    color: #d4d4d4;
-    height: 400px;
-    width: 100%;
-    max-width: 800px;
-    overflow: hidden;
-    border-radius: 6px;
-  }
-  .line-numbers {
-    background: #2e2e2e;
-    padding: 10px 5px;
-    text-align: right;
-    user-select: none;
-    color: #858585;
-    overflow: hidden;
-  }
-  .line-numbers span {
-    display: block;
-    height: 20px;
-  }
-  textarea {
-    flex: 1;
-    padding: 10px;
-    background: transparent;
-    color: inherit;
-    border: none;
-    resize: none;
-    outline: none;
-    font-family: monospace;
-    font-size: 14px;
-    line-height: 20px;
-  }
-  
+/* style.css */
+
+.editor-container {
+  display: flex;
+  flex-direction: unset;
+  width: 500px;
+  height: 350px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.editor-code-area{
+  overflow: auto;
+  height: 310px;
+
+}
+.editor-button-area{
+  overflow: hidden;
+  border: 2px solid #ddd;
+  height: 40px;
+
+}
+
+.editor-button {
+  padding: 8px 16px;
+  margin: 10px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.code-editor-wrapper {
+  flex-grow: 1;
+  /* Make sure the CM theme/styles apply fully */
+}
+
+/* Custom styles for highlighting the selected line */
+.highlight-line {
+  background-color: rgba(255, 255, 0, 0.3); /* Highlight color */
+}
