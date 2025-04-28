@@ -18,14 +18,28 @@
 }
 .editor-button-area{
   overflow: hidden;
+  display: flex;
+  justify-content: left;
+  align-items: flex-start;
+  flex-direction: row;
   border: 2px solid #ddd;
   height: 40px;
 
 }
 
+.editor-status-text{
+  overflow: hidden;
+  display: flex;
+  margin-top: 10px;
+  margin-bottom: 0;
+  justify-content: left;
+  align-items: flex-start;
+}
+
 .editor-button {
   padding: 8px 16px;
   margin: 10px;
+  margin-top: 2px;
   cursor: pointer;
   align-self: flex-start;
 }

@@ -1,0 +1,120 @@
+.aluapp-main {
+    background: #0a0a0a;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow-x: hidden;
+    min-height: 100vh;
+}
+
+/* Başlık */
+h1 {
+    margin-bottom: 10px;
+    font-size: 2rem;
+    color: #00d9ff;
+    text-align: center;
+}
+/*Form*/
+.form-container {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+            width: 300px;
+            text-align: center;
+        }
+
+        .form-container input,
+        .form-container select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            background: #ffffff;
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .form-container button {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            background-color: #00bcd4;
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .form-container button:hover {
+            background-color: #0097a7;
+        }
+
+/* Seçim Kutuları */
+.selector {
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.selector select {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background: #ffffff;
+    color: #000;
+    cursor: pointer;
+}
+
+/* Ana İşlem Kutuları */
+.container {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    position: relative;
+    margin-top: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Her Birim */
+.unit {
+    border: 3px solid #00d9ff;
+    padding: 20px 30px;
+    border-radius: 15px;
+    text-align: center;
+    background: #111;
+    box-shadow: 0 0 15px #00d9ff;
+    min-width: 120px;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* Bağlantı Çizgileri */
+.line {
+    width: 60px;
+    height: 4px;
+    background: #00d9ff;
+}
+
+/* Hareket Eden Veri */
+.data {
+    width: 14px;
+    height: 14px;
+    background: #ffd700;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    animation: moveData 14s linear infinite;
+    box-shadow: 0 0 8px #ffd700;
+}

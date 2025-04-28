@@ -1,4 +1,4 @@
-import { codeTable } from '../../objects';
+import { codeTable, Simulator } from '../../objects';
 import './style.css'; 
 import {EditorView, basicSetup} from "codemirror"
 
@@ -19,14 +19,79 @@ export default function createEditor() {
   const runButton = document.createElement("button");
   runButton.innerText = "Run";
   runButton.className = "editor-button";
+
+  const tickButton = document.createElement("button");
+  tickButton.innerText = "Tick";
+  tickButton.className = "editor-button";
   
+
+  let status = statusArea();
+
+
   buttonContainer.appendChild(runButton);
+  buttonContainer.appendChild(tickButton);
+  buttonContainer.appendChild(status);
+
 
   container.appendChild(buttonContainer);
   container.appendChild(wrapper);
 
+
+
+  let simulator = Simulator;
+  simulator.setReady()
+  console.log(simulator);
+  
+  runButton.addEventListener("click", () => {
+    console.log("RUN");
+    
+  })
+
+
+  let isEnded = true;
+  tickButton.addEventListener("click", () => {
+    let line = view.state.doc.toJSON();
+
+    if (isEnded){
+      simulator.reset();
+      simulator.setReady(line);
+      document.querySelector("#editor-status-text").textContent = "the program has benn started";
+      tickButton.textContent = "Tick"
+      isEnded = false
+
+    }else{
+
+
+      try{ 
+
+        let {end} = simulator.tick(line[simulator.rgs.ctr]);
+        console.log(end);
+
+        if (end){
+          isEnded = true
+          document.querySelector("#editor-status-text").textContent = "the program has ended";
+          tickButton.textContent = "restart the app"
+        }else{
+          isEnded = false
+
+        }
+      
+      } catch(e){
+        console.log("Error in tick", e);
+
+      }
+    }
+  })
+  
+  let doc = `imm r1 10
+mov 0x1 0x0
+add 0x0 r1
+mov 0x2 0x0
+add 0x0 r1
+mov 0x3 0x0
+add 0x0 r1`
   const view = new EditorView({
-    doc: "Start document\nasasd",
+    doc,
     parent: wrapper,
     extensions: [
       basicSetup,
@@ -70,4 +135,22 @@ export default function createEditor() {
 
 
   return container;
+}
+
+
+
+
+function statusArea() {
+  const status = document.createElement("div");
+  status.className = "editor-status-area";
+  status.id = "code-status-area";
+
+  const statusText = document.createElement("p");
+  statusText.innerText = "Status: Ready";
+  statusText.className = "editor-status-text";
+  statusText.id = "editor-status-text";
+  
+  status.appendChild(statusText);
+
+  return status;
 }

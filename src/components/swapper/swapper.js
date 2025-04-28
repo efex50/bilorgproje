@@ -11,10 +11,6 @@ export default function Swapper() {
     
     const selectNereye = document.createElement('select');
     selectNereye.className = 'id-tag-select';
-
-    console.log(selectNerden);
-    console.log(selectNereye);
-    
     
     const options = ['ram'];
     options.forEach(opt => {

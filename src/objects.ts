@@ -1,10 +1,7 @@
 import { EditorView } from "codemirror";
+import { SimulatorRunner } from "./simulator/simulator";
 
   
-
-export let StoredObjects = {};
-
-export let PredefinedFunctions = {}
 
 
 export class Table{
@@ -62,6 +59,8 @@ export class Table{
             }
         }
 
+
+        
         // 🛠 Trigger animation on the real cell
         const cellId = this.cellIdGen(row,col);
         const cell = document.getElementById(cellId);
@@ -84,7 +83,6 @@ export class Table{
         if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) {
             throw new Error('Invalid line or row index');
         }
-        console.log("lan");
         
         // 🛠 Trigger animation on the real cell
         const cellId = this.cellIdGen(row,col);
@@ -169,7 +167,6 @@ export class Table{
         const row = Math.floor(id / this.cols); // divide by COLS
         const col = id % this.cols;              // modulus with COLS
     
-        console.log(`row: ${row}, col: ${col}`);
     
         return { row, col };
     }
@@ -185,7 +182,36 @@ export class Table{
         let a :Content =  { content: `${i + 1},${j + 1}`,id:ctr };
         return a;
     }
-    
+
+}
+
+export class Ram{
+    table:Table;
+    constructor(rows:number,cols:number,name:string,tableId:string,classes:string[] = []){
+        
+        
+        this.table = new Table(rows,cols,name,tableId,classes);
+        this.table.contentGen = zeroContent;
+        this.table.init();
+    }
+    getId(id:number):Content {
+        // todo trigger cache
+        return this.table.getId(id);
+    }
+    setId(id:number,context:any) {
+        // todo trigger cache
+        
+        return this.table.setId(id,context);
+    }
+    reset():void{
+        this.table.init();
+        this.table.render();
+    }
+}
+
+function zeroContent(args:{ctr:number,i,j}):Content {
+
+    return { content: "0", id: args.ctr };
 }
 
 export class Program{
@@ -200,13 +226,26 @@ export let codeTable = {
 };
 
 export class Flags{
-    zero: boolean = false;
     sign: boolean = false;
     carry: boolean = false;
     overflow: boolean = false;
+
+    // importante
+    zero: boolean = false;
     parity: boolean = false;
     bigger: boolean = false;
     smaller: boolean = false;
+    reset():void{
+        this.sign = false;
+        this.carry = false;
+        this.overflow = false;
+
+        
+        this.zero = false;
+        this.parity = false;
+        this.bigger = false;
+        this.smaller = false;
+    }
 }
 export class Registers {
     private _r1: number = 0;
@@ -233,10 +272,7 @@ export class Registers {
             return `<div class="red-text">${registerName}:</div> ${args.content}`;
         };
 
-        this.table.contentGen = function (args): Content {
-            let a: Content = { content: "0", id: args.ctr };
-            return a;
-        }
+        this.table.contentGen = zeroContent;
 
 
         this.table.init();
@@ -279,16 +315,16 @@ export class Registers {
         return this._r9;
     }
     get rsp(): number {
-        this.table.getId(10);
+        this.table.getId(9);
         return this._rsp;
     }
     get rbp(): number {
-        this.table.getId(11);
+        this.table.getId(10);
         return this._rbp;
     }
     get ctr(): number {
         this.table.getId(11);
-        return this._rbp;
+        return this._ctr;
     }
     
 
@@ -330,14 +366,16 @@ export class Registers {
         }
     set rsp(value: number) {
         this._rsp = value;
-        this.table.setId(10, `${this._rsp}`);
+        this.table.setId(9, `${this._rsp}`);
         }
     set rbp(value: number) {
         this._rbp = value;
-        this.table.setId(11, `${this._rbp}`);
+        this.table.setId(10, `${this._rbp}`);
     }
     set ctr(value: number) {
-        this.ctr = value;
+        console.log("set ctr",value);
+        
+        this._ctr = value;
         this.table.setId(11, `${this._ctr}`);
     }
 
@@ -368,3 +406,10 @@ export class Cache{
     private _type : CacheType = CacheType.FIFO;// fifo , lru
 
 }
+
+
+
+
+// do not touch this
+export let StoredObjects = {};
+export let Simulator:SimulatorRunner = new SimulatorRunner();

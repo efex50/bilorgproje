@@ -22,7 +22,9 @@ export function readCodeArea():string[] {
 
 
 export function parseSmartNumber(str) {
+  if (typeof str === 'number') return str as number;
   if (typeof str !== 'string') return NaN;
+
 
   // Trim whitespace just in case
   str = str.trim();

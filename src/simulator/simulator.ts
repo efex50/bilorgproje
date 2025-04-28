@@ -1,20 +1,55 @@
+import { get } from "http";
 import { parseSmartNumber, readCodeArea } from "../funs";
-import { Flags, Registers, StoredObjects } from "../objects";
+import { Flags, Ram, Registers, StoredObjects } from "../objects";
 
 export class Instruction{
 
 }
+
+
+
+type Operand = {
+    type: string,
+    value: string | number
+}
+
+
+
 export class SimulatorRunner{
     // as ms 
     speed: number;
     isRunning:boolean = false;
+    isPaused:boolean = true;
     flags:Flags= new Flags();
+    labels = {};
+
+
+    rgs:Registers = StoredObjects["registers"];
+    ram:Ram = StoredObjects["ram"];
+    cache:Cache = StoredObjects["cache1"];
 
     constructor(speed: number = 100){
         this.speed = speed;
 
     }
+    setReady(program:string[] | undefined){
+        
+        this.rgs  = StoredObjects["registers"];
+        this.ram  = StoredObjects["ram"];
+        this.cache = StoredObjects["cache1"];
+        if (program !== undefined){
+            let ctr = 0;
+            for (let x in program){
+                let p = x.split(' ');
+                if (p[0] === "lbl"){
+                    this.labels[p[0]] = ctr
+                }
+                ctr++;
+            }
+        };
 
+
+    }
     stop(){
         this.isRunning = false;
     }
@@ -22,62 +57,12 @@ export class SimulatorRunner{
     async run_to_end(){
         const debugArea = document.querySelector("#code-debug-area");
         let lines = readCodeArea();
-        let rgs = StoredObjects["registers"];
-        let ram = StoredObjects["ram"];
-        let Cache = StoredObjects["cache1"];
-        let labels = {};
-
-
-
-
-        function innerTick(line: string){
-            let end = false;
-            
-            
-            if (line === undefined || line === null){
-                end = true;
-            }else{
-                let parts = line.split(" ");
-                switch(parts[0]){
-                    
-                    case "add":
-                    case "sub":
-                    case "deref":
-                    case "mov":{
-
-                        let o1 = handleOperand(parts[1]);
-                        let o2 = handleOperand(parts[2]);
-                        moveOperands(parts[0],{o1,o2});
-                        break;
-                    }
-                    case "ret":
-                    case "cmp":
-                    case "jmp":
-                    case "jne":
-                    case "jeq":
-                    case "jgt":
-                    case "jlt":
-                    case "call":
-                    case "inc":
-                        let o1 = handleOperand(parts[1]);
-                        moveOperands(parts[0],{o1,o2:undefined});
-                        break;
-                    
-                }
-                console.log(parts);
-                
-            }
-            
-            
-            return [new Promise(resolve => setTimeout((resolve), this.speed)),end];
-        }
-        
-
         
         while(this.isRunning){
-            let line = lines[rgs.ctr]
-            let [_,end] = await innerTick(line);
-            rgs.ctr += 1;
+            let line = lines[this.rgs.ctr]
+            let {timeout,end} = this.tick(line);
+            await timeout;
+            this.rgs.ctr += 1;
             if (end){
                 break;
             }
@@ -87,23 +72,67 @@ export class SimulatorRunner{
     }
 
     reset(){
-        StoredObjects["registers"].reset();
+        this.flags.reset();
+        this.rgs.reset();
+        this.ram.reset()
     }
 
-    tick(){
-        let r:Registers = StoredObjects["registers"];
-    }
+    tick(line:string):{timeout:Promise<void>,end:boolean}{
+        let end = false;
+        
+        
+            
+        if (line === undefined || line === null){
+            end = true;
+        }else if(line.length === 0){
+        }else{
+            let parts = line.split(" ");
+            switch(parts[0]){
+                case "lbl":
+                    this.labels[parts[1]] = this.rgs.ctr;
+                    break;
+                case "add":
+                case "sub":
+                case "deref":
+                case "imm":
+                case "mov":{
+
+                    let o1 = this.handleOperand(parts[1]);
+                    let o2 = this.handleOperand(parts[2]);
+                    console.log("test");
+                    
+                    this.moveOperands(parts[0],{o1,o2,label:undefined});
+                    break;
+                }
+                case "ret" :
+                case "cmp" :
+                case "jmp" :
+                case "jne" :
+                case "jeq" :
+                case "jgt" :
+                case "jlt" :
+                case "call":
+                case "inc" :
+                    let o1 = this.handleOperand(parts[1]);
+                    this.moveOperands(parts[0],{o1,o2:undefined,label:parts[1]});
+                    break;
+                default:
+                    throw new Error("Unknown instruction: " + parts[0]);
+                
+            }
+            console.log(parts);
+            
+        }
+        this.rgs.ctr += 1;
+        
+        return {timeout:new Promise(resolve => setTimeout((resolve), this.speed)),end};
 }
-export let SimulatorProgram:Instruction[] = [];
 
 
-type Operand = {
-    type: string,
-    value: string | number
-}
 
 
-function handleOperand(op:string):Operand{
+ handleOperand(op:string):Operand{
+    
     switch(op){
         case "r0":
         case "r1":
@@ -126,15 +155,18 @@ function handleOperand(op:string):Operand{
 
 }
  
-function moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined}){
+ moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined,label:string|undefined}){
+    
+    let regs:Registers = this.rgs;
+    let ram:Ram = this.ram;
     switch(code){
         case "inc":
             if (ops.o1.type === "register"){
                 let r = ops.o1.value as string;
-                StoredObjects["registers"][r] += 1;
+                regs[r] += 1;
             }else{
                 let id = ops.o1.value as number;
-                StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id)+1);
+                this.setToRam(id, this.getFromRam(id) + 1);
             }
             break;
         case "add":
@@ -145,19 +177,19 @@ function moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined}){
                 let r = ops.o1.value as string;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["registers"][r] += StoredObjects["registers"][r2];
+                    regs[r] += regs[r2];
                 }else{
                     let id = ops.o2.value as number;
-                    StoredObjects["registers"][r] += StoredObjects["ram"].getId(id);
+                    regs[r] += this.getFromRam(id);
                 }
             }else{
                 let id = ops.o1.value as number;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id)+StoredObjects["registers"][r2]);
+                    this.setToRam(id,this.getFromRam(id)+regs[r2]);
                 }else{
                     let id2 = ops.o2.value as number;
-                    StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id)+StoredObjects["ram"].getId(id2));
+                    this.setToRam(id,this.getFromRam(id)+this.getFromRam(id2));
                 }
             }
             break;
@@ -169,19 +201,19 @@ function moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined}){
                 let r = ops.o1.value as string;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["registers"][r] -= StoredObjects["registers"][r2];
+                    regs[r] -= regs[r2];
                 }else{
                     let id = ops.o2.value as number;
-                    StoredObjects["registers"][r] -= StoredObjects["ram"].getId(id);
+                    regs[r] -= this.getFromRam(id);
                 }
             }else{
                 let id = ops.o1.value as number;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id)-StoredObjects["registers"][r2]);
+                    this.setToRam(id,this.getFromRam(id)-regs[r2]);
                 }else{
                     let id2 = ops.o2.value as number;
-                    StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id)-StoredObjects["ram"].getId(id2));
+                    this.setToRam(id,this.getFromRam(id)-this.getFromRam(id2));
                 }
             }
             break;
@@ -193,22 +225,52 @@ function moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined}){
                 let r = ops.o1.value as string;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["registers"][r] = StoredObjects["registers"][r2];
+                    regs[r] = regs[r2];
                 }else{
                     let id = ops.o2.value as number;
-                    StoredObjects["registers"][r] = StoredObjects["ram"].getId(id);
+                    regs[r] = this.getFromRam(id);
                 }
             }else{
                 let id = ops.o1.value as number;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["ram"].setId(id,StoredObjects["registers"][r2]);
+                    this.setToRam(id,regs[r2]);
                 }else{
+                    let id1 = ops.o1.value as number;
                     let id2 = ops.o2.value as number;
-                    StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id2));
+                    console.log("---------------------");
+                    console.log("id1:",id1);
+                    console.log("id2:",id2);
+                    let data = this.ram.getId(id2).content;
+                    console.log("data:",data);
+                    
+                    
+                    this.setToRam(id1,this.getFromRam(id2));
                 }
             }
             break;
+        case "imm":{
+            if (ops.o2 === undefined){
+                throw new Error("imm requires two operands");
+            }
+            if (ops.o1.type === "register"){
+                let id = ops.o1.value as string;
+
+                let imm = ops.o2.value as number;
+                this.rgs[id] = imm;
+            }else{
+                let id = ops.o1.value as number;
+                console.log("zat",ops.o2.value as string);
+                
+                
+                let imm = ops.o2.value as number;
+                
+                console.log(imm);
+                
+                this.setToRam(id,imm);
+            }
+            break;
+        }
         case "deref":
             if (ops.o2 === undefined){
                 throw new Error("deref requires two operands");
@@ -217,19 +279,19 @@ function moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined}){
                 let r = ops.o1.value as string;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["registers"][r] = StoredObjects["ram"].getId(StoredObjects["registers"][r2]);
+                    regs[r] = ram.getId(regs[r2]);
                 }else{
                     let id = ops.o2.value as number;
-                    StoredObjects["registers"][r] = StoredObjects["ram"].getId(id);
+                    regs[r] = this.getFromRam(id);
                 }
             }else{
                 let id = ops.o1.value as number;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    StoredObjects["ram"].setId(id,StoredObjects["registers"][r2]);
+                    this.setToRam(id,regs[r2]);
                 }else{
                     let id2 = ops.o2.value as number;
-                    StoredObjects["ram"].setId(id,StoredObjects["ram"].getId(id2));
+                    this.setToRam(id,this.getFromRam(id2));
                 }
             }
             break;
@@ -237,36 +299,115 @@ function moveOperands(code:string,ops:{o1:Operand,o2:Operand | undefined}){
             if (ops.o2 === undefined){
                 throw new Error("cmp requires two operands");
             }
-            if (ops.o1.type === "register"){
-                let r = ops.o1.value as string;
-                if (ops.o2.type === "register"){
-                    let r2 = ops.o2.value as string;
-                    StoredObjects["flags"].setFlag(StoredObjects["registers"][r] - StoredObjects["registers"][r2]);
-                }else{
-                    let id = ops.o2.value as number;
-                    StoredObjects["flags"].setFlag(StoredObjects["registers"][r] - StoredObjects["ram"].getId(id));
-                }
+            let flags = compareNums(this.getNumFromOperand(ops.o1),this.getNumFromOperand(ops.o2));
+            this.flags = flags;
+            break;
+        case "test":
+            let flags2 = compareNums(this.getNumFromOperand(ops.o1),0);
+            this.flags = flags2;
+            break;
+        case "jmp":{
+            if (this.labels[ops.label as string] !== undefined){
+                console.log("İTS A LABEL");
+                this.rgs.ctr = this.labels[ops.label as string]
             }else{
-                let id = ops.o1.value as number;
-                if (ops.o2.type === "register"){
-                    let r2 = ops.o2.value as string;
-                    StoredObjects["flags"].setFlag(StoredObjects["ram"].getId(id) - StoredObjects["registers"][r2]);
-                }else{
-                    let id2 = ops.o2.value as number;
-                    StoredObjects["flags"].setFlag(StoredObjects["ram"].getId(id) - StoredObjects["ram"].getId(id2));
-                }
+
+                console.log(this.labels)
+                console.log("label:",ops.o1);
+                
+                let addr = this.getNumFromOperand(ops.o1);
+                regs.ctr = addr;
             }
             break;
+        }
+        case "jne":{
+            if (!this.flags.parity){
+                let addr = this.getNumFromOperand(ops.o1);
+                regs.ctr = addr;
+            }
+            break;
+        }
+        case "jeq":{
+            if (this.flags.parity){
+                let addr = this.getNumFromOperand(ops.o1);
+                regs.ctr = addr;
+            }
+            break;
+        }
+        case "jgt":{
+            if (this.flags.bigger){
+                let addr = this.getNumFromOperand(ops.o1);
+                regs.ctr = addr;
+            }
+            break;
+        }
+        case "jlt":{
+            if (this.flags.smaller){
+                let addr = this.getNumFromOperand(ops.o1);
+                regs.ctr = addr;
+            }
+            break;
+        }
+        case "call":{
+            let addr = this.getNumFromOperand(ops.o1);
+            // the ctr will auto increases by every tick
+            this.setToRam(regs.rsp,regs.ctr-1);
+            regs.ctr = addr;
+            regs.rsp += 1;
+            break;
+        }
+        case "ret":{
+            let addr = this.getFromRam(regs.rsp);
+            regs.rsp -= 1;
+            break;
+        }
     }
 }
 
+ getFromRam(id:number):number{
+    let val = this.ram.getId(id).content;    
+    
+    return parseSmartNumber(val);
+}
+
+ setToRam(id:number,val:number):number{
+    
+    this.ram.setId(id,val);
+    return parseSmartNumber(val);
+}
+
+ getNumFromOperand(op:Operand):number{
+    if (op.type === "register"){
+        let r = op.value as string;
+        return this.rgs[r];
+    }else{
+        let id = op.value as number;
+        return this.getFromRam(id);
+    }
+}
+}
+function compareNums(n1:number,n2:number):Flags{
+    let flags = new Flags();
+    if (n1 > n2){
+        flags.bigger = true;
+    }else if (n1 < n2){
+        flags.smaller = true;
+    }else{
+        flags.parity = true;
+    }
+    return flags;
+}
+
+
 export enum InstructionType {
-    INC = 'inc',//
-    ADD = 'add',//
-    SUB = 'sub',//
+    INC = 'inc',    //
+    IMM = 'imm',    //
+    ADD = 'add',    //
+    SUB = 'sub',    //
     DEREF = 'deref',//
-    MOV = 'mov',//
+    MOV = 'mov',    //
     CMP = 'cmp',
+    TEST = 'test',
     JMP = 'jmp',
     JNE = 'jne',
     JEQ = 'jeq',
