@@ -32,6 +32,12 @@ export class SimulatorRunner{
         this.speed = speed;
 
     }
+    reset(){
+        this.flags.reset();
+        this.rgs.reset();
+        this.ram.reset()
+    }
+
     setReady(program:string[] | undefined){
         
         this.rgs  = StoredObjects["registers"];
@@ -71,11 +77,6 @@ export class SimulatorRunner{
 
     }
 
-    reset(){
-        this.flags.reset();
-        this.rgs.reset();
-        this.ram.reset()
-    }
 
     tick(line:string):{timeout:Promise<void>,end:boolean}{
         let end = false;
@@ -99,7 +100,6 @@ export class SimulatorRunner{
 
                     let o1 = this.handleOperand(parts[1]);
                     let o2 = this.handleOperand(parts[2]);
-                    console.log("test");
                     
                     this.moveOperands(parts[0],{o1,o2,label:undefined});
                     break;
@@ -259,9 +259,7 @@ export class SimulatorRunner{
                 let imm = ops.o2.value as number;
                 this.rgs[id] = imm;
             }else{
-                let id = ops.o1.value as number;
-                console.log("zat",ops.o2.value as string);
-                
+                let id = ops.o1.value as number;                
                 
                 let imm = ops.o2.value as number;
                 
@@ -278,20 +276,36 @@ export class SimulatorRunner{
             if (ops.o1.type === "register"){
                 let r = ops.o1.value as string;
                 if (ops.o2.type === "register"){
+                    console.log("t1");
+                    
                     let r2 = ops.o2.value as string;
                     regs[r] = ram.getId(regs[r2]);
                 }else{
+                    console.log("t2");
+                    
                     let id = ops.o2.value as number;
-                    regs[r] = this.getFromRam(id);
+                    regs[r] = this.getFromRam(this.getFromRam(id));
                 }
             }else{
-                let id = ops.o1.value as number;
                 if (ops.o2.type === "register"){
                     let r2 = ops.o2.value as string;
-                    this.setToRam(id,regs[r2]);
+                    let readedPtr = regs[r2];
+                    console.log("ptr holder addr:",readedPtr);
+                    let derefedData = this.getFromRam(readedPtr as number)
+                    console.log("derefed:",derefedData);
+                    
+                    
+                    let target = ops.o1.value as number;
+                    this.setToRam(target,derefedData);
                 }else{
-                    let id2 = ops.o2.value as number;
-                    this.setToRam(id,this.getFromRam(id2));
+                    let readedPtr = ops.o2.value;
+                    console.log("ptr holder addr:",readedPtr);
+                    let derefedPtr = this.getFromRam(readedPtr as number)
+                    console.log("derefed:",derefedPtr);
+                    
+                    
+                    let target = ops.o1.value as number;
+                    this.setToRam(target,this.getFromRam(derefedPtr));
                 }
             }
             break;
@@ -301,10 +315,14 @@ export class SimulatorRunner{
             }
             let flags = compareNums(this.getNumFromOperand(ops.o1),this.getNumFromOperand(ops.o2));
             this.flags = flags;
+            console.log(this.flags);
+            
             break;
         case "test":
             let flags2 = compareNums(this.getNumFromOperand(ops.o1),0);
             this.flags = flags2;
+            console.log(this.flags);
+
             break;
         case "jmp":{
             if (this.labels[ops.label as string] !== undefined){

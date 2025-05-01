@@ -1,89 +1,53 @@
 import { codeTable, Simulator } from '../../objects';
 import './style.css'; 
-import {EditorView, basicSetup} from "codemirror"
+import {EditorView, basicSetup,} from "codemirror"
+import {EditorState, StateEffect} from "@codemirror/state"
 
 export default function createEditor() {
   // Initialize CodeMirror editor
   
   const container = document.createElement("div");
-  container.className = "code-editor-wrapper";
-  container.id = "code-area-container";
-
   const wrapper = document.createElement("div");
-  wrapper.className = "editor-code-area";
-  wrapper.id = "code-textbox-area";
-  
   const buttonContainer = document.createElement("div");
-  buttonContainer.className = "editor-button-area";
-
   const runButton = document.createElement("button");
-  runButton.innerText = "Run";
-  runButton.className = "editor-button";
-
   const tickButton = document.createElement("button");
-  tickButton.innerText = "Tick";
-  tickButton.className = "editor-button";
-  
-
   let status = statusArea();
 
+  {
+    container.className = "code-editor-wrapper";
+    container.id = "code-area-container";
 
-  buttonContainer.appendChild(runButton);
-  buttonContainer.appendChild(tickButton);
-  buttonContainer.appendChild(status);
+    wrapper.className = "editor-code-area";
+    wrapper.id = "code-textbox-area";
+    
+    
+    buttonContainer.className = "editor-button-area";
+    runButton.innerText = "Run";
+    runButton.className = "editor-button";
+
+    tickButton.innerText = "Tick";
+    tickButton.className = "editor-button";
+    
+    
+    buttonContainer.appendChild(runButton);
+    buttonContainer.appendChild(tickButton);
+    buttonContainer.appendChild(status);
+  
+  
+    container.appendChild(buttonContainer);
+    container.appendChild(wrapper);
+  }
 
 
-  container.appendChild(buttonContainer);
-  container.appendChild(wrapper);
+
 
 
 
   let simulator = Simulator;
   simulator.setReady()
-  console.log(simulator);
   
-  runButton.addEventListener("click", () => {
-    console.log("RUN");
-    
-  })
 
-
-  let isEnded = true;
-  tickButton.addEventListener("click", () => {
-    let line = view.state.doc.toJSON();
-
-    if (isEnded){
-      simulator.reset();
-      simulator.setReady(line);
-      document.querySelector("#editor-status-text").textContent = "the program has benn started";
-      tickButton.textContent = "Tick"
-      isEnded = false
-
-    }else{
-
-
-      try{ 
-
-        let {end} = simulator.tick(line[simulator.rgs.ctr]);
-        console.log(end);
-
-        if (end){
-          isEnded = true
-          document.querySelector("#editor-status-text").textContent = "the program has ended";
-          tickButton.textContent = "restart the app"
-        }else{
-          isEnded = false
-
-        }
-      
-      } catch(e){
-        console.log("Error in tick", e);
-
-      }
-    }
-  })
-  
-  let doc = `imm r1 10
+let doc = `imm r1 10
 mov 0x1 0x0
 add 0x0 r1
 mov 0x2 0x0
@@ -97,6 +61,9 @@ add 0x0 r1`
       basicSetup,
     ]
   })
+
+  
+
   codeTable["t"] = view;
 
   function clearText() {
@@ -104,6 +71,67 @@ add 0x0 r1`
       changes: {from: 0, to: view.state.doc.length, insert: ""}
     })
   }
+
+
+
+
+
+  runButton.addEventListener("click", () => {
+    console.log(isEnded);
+    setEditorReadable(false);
+
+    
+  })
+  
+
+
+  let  isEnded = true;
+  function setEditorReadable(ended){
+    console.log("editor readonly:",ended);
+    
+    view.dispatch({
+      effects:StateEffect.appendConfig.of(EditorState.readOnly.of(ended))
+    })
+  }
+  
+  tickButton.addEventListener("click", () => {
+    let line = view.state.doc.toJSON();
+
+    if (isEnded){
+
+      isEnded = false
+      setEditorReadable(!isEnded);
+      simulator.reset();
+      simulator.setReady(line);
+      document.querySelector("#editor-status-text").textContent = "the program has benn started";
+      tickButton.textContent = "Tick"
+
+    }else{
+
+
+      try{ 
+
+        let {end} = simulator.tick(line[simulator.rgs.ctr]);
+
+        if (end){
+          isEnded = true
+          setEditorReadable(!isEnded);
+          document.querySelector("#editor-status-text").textContent = "the program has ended";
+          tickButton.textContent = "restart the app"
+        }else{
+          isEnded = false
+          setEditorReadable(!isEnded);
+
+        }
+      
+      } catch(e){
+        console.log("Error in tick", e);
+
+      }
+    }
+  })
+  
+
 
   // e = {line:number}
   container.addEventListener("highlight", (e) => {
@@ -123,7 +151,7 @@ add 0x0 r1`
   function highlightLine(editor) {
     const line = editor.getCursor().line; // Get the current line
     const allLines = editor.getDoc().lineCount(); // Get total line count
-    editor.getDoc().removeAllMarks(); // Clear previous highlights
+    view.getDoc().removeAllMarks(); // Clear previous highlights
     
     // Add a new highlight to the selected line
     editor.getDoc().markText(
@@ -132,7 +160,6 @@ add 0x0 r1`
       { className: 'highlight-line' }
     );
   }
-
 
   return container;
 }
@@ -151,6 +178,8 @@ function statusArea() {
   statusText.id = "editor-status-text";
   
   status.appendChild(statusText);
+
+
 
   return status;
 }

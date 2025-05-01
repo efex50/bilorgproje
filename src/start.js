@@ -15,12 +15,12 @@ export function main() {
           <div id="code-debug-area" class="w3-container w3-quarter scrollable-div">
           </div>
           <div class="w3-container w3-quarter scrollable-div">
+            <div id="register-div"></div>
+            <div id="ram-div"></div>
+          </div> 
+          <div class="w3-container w3-quarter scrollable-div">
             <div id="cache1-div"></div>
           </div>
-          <div class="w3-container w3-quarter scrollable-div">
-            <div id="ram-div"></div>
-            <div id="register-div"></div>
-          </div> 
         </div>
       `, document.querySelector('#app'));
       
