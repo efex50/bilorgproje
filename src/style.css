@@ -48,9 +48,6 @@ body {
 
 @keyframes getGlow {
   0% {
-    box-shadow: 0 0 0px #00ffcc;
-  }
-  50% {
     box-shadow: 0 0 10px #00ffcc, 0 0 20px #00ffcc;
   }
   100% {
@@ -64,18 +61,15 @@ body {
 
 
 @keyframes setGlow {
-    0% {
-      box-shadow: 0 0 0px #c81313;
-    }
-    50% {
-      box-shadow: 0 0 10px #c81313, 0 0 20px #c81313;
-    }
-    100% {
-      box-shadow: 0 0 0px #c81313;
-    }
+  0% {
+    box-shadow: 0 0 10px #c81313, 0 0 20px #c81313;
   }
+  100% {
+    box-shadow: 0 0 0px #c81313;
+  }
+}
   
-  .glow-effect-set {
-    animation: setGlow 1s ease-in-out;
-  }
+.glow-effect-set {
+  animation: setGlow 0.5s ease-in-out;
+}
     

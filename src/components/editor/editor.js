@@ -2,6 +2,7 @@ import { codeTable, Simulator } from '../../objects';
 import './style.css'; 
 import {EditorView, basicSetup,} from "codemirror"
 import {EditorState, StateEffect} from "@codemirror/state"
+import { Examples, Icons } from './Datas';
 
 export default function createEditor() {
   // Initialize CodeMirror editor
@@ -11,7 +12,7 @@ export default function createEditor() {
   const buttonContainer = document.createElement("div");
   const runButton = document.createElement("button");
   const tickButton = document.createElement("button");
-  let status = statusArea();
+  let status = new StatusArea();
 
   {
     container.className = "code-editor-wrapper";
@@ -22,16 +23,16 @@ export default function createEditor() {
     
     
     buttonContainer.className = "editor-button-area";
-    runButton.innerText = "Run";
+    runButton.innerHTML = Icons.play;
     runButton.className = "editor-button";
 
-    tickButton.innerText = "Tick";
+    tickButton.innerHTML = Icons.tick;
     tickButton.className = "editor-button";
     
     
     buttonContainer.appendChild(runButton);
     buttonContainer.appendChild(tickButton);
-    buttonContainer.appendChild(status);
+    buttonContainer.appendChild(status.node());
   
   
     container.appendChild(buttonContainer);
@@ -46,16 +47,8 @@ export default function createEditor() {
   let simulator = Simulator;
   simulator.setReady()
   
-
-let doc = `imm r1 10
-mov 0x1 0x0
-add 0x0 r1
-mov 0x2 0x0
-add 0x0 r1
-mov 0x3 0x0
-add 0x0 r1`
   const view = new EditorView({
-    doc,
+    doc:Examples[1],
     parent: wrapper,
     extensions: [
       basicSetup,
@@ -72,14 +65,33 @@ add 0x0 r1`
     })
   }
 
+  // Event listener to highlight the line when selected
+
+  // Function to highlight the selected line
+  function highlightLine(line) {
+    
+    line = line-1
+    let lines = document.getElementsByClassName("cm-line");
+    if (!lines[line].className.split(" ").includes("green-line")){
+      lines[line].className =lines[line].className + " green-line"
+    }
+    console.log(lines);
+    
+  }
 
 
 
 
   runButton.addEventListener("click", () => {
-    console.log(isEnded);
-    setEditorReadable(false);
-
+    let parent = document.getElementsByClassName("cm-content")[0];
+    parent.addEventListener("change",() => {
+      console.log("zort");
+      
+    })
+      
+    
+    
+    highlightLine(1)
     
   })
   
@@ -87,10 +99,13 @@ add 0x0 r1`
 
   let  isEnded = true;
   function setEditorReadable(ended){
-    console.log("editor readonly:",ended);
-    
+    const extensions = [
+      basicSetup, // Includes line numbers, keymaps, etc.
+      EditorState.readOnly.of(ended)
+    ];
+  
     view.dispatch({
-      effects:StateEffect.appendConfig.of(EditorState.readOnly.of(ended))
+      effects:StateEffect.reconfigure.of(extensions)
     })
   }
   
@@ -104,10 +119,9 @@ add 0x0 r1`
       simulator.reset();
       simulator.setReady(line);
       document.querySelector("#editor-status-text").textContent = "the program has benn started";
-      tickButton.textContent = "Tick"
+      tickButton.innerHTML = Icons.tick
 
     }else{
-
 
       try{ 
 
@@ -117,7 +131,7 @@ add 0x0 r1`
           isEnded = true
           setEditorReadable(!isEnded);
           document.querySelector("#editor-status-text").textContent = "the program has ended";
-          tickButton.textContent = "restart the app"
+          status.write("restart the app")
         }else{
           isEnded = false
           setEditorReadable(!isEnded);
@@ -138,28 +152,35 @@ add 0x0 r1`
     
     console.log("ZORT",e.detail.line)
   })
-
+  console.log("editor container:",container.id);
+  
   container.addEventListener("clear", (e) => {
     clearText();    
   })
+  container.addEventListener("ReadonlyState", (e) => {
+    setEditorReadable(true)
+  })
+  container.addEventListener("notReadonlyState", (e) => {
+    setEditorReadable(false)
+  })
 
-  
-
-  // Event listener to highlight the line when selected
-
-  // Function to highlight the selected line
-  function highlightLine(editor) {
-    const line = editor.getCursor().line; // Get the current line
-    const allLines = editor.getDoc().lineCount(); // Get total line count
-    view.getDoc().removeAllMarks(); // Clear previous highlights
+  function setObserver(){
+    let editor = document.querySelector(".cm-content");
+    const config = {attributes:true};
     
-    // Add a new highlight to the selected line
-    editor.getDoc().markText(
-      { line: line, ch: 0 },
-      { line: line + 1, ch: 0 },
-      { className: 'highlight-line' }
-    );
+    
+    let callback = function(mutationList,observer){
+      console.log(mutationList);
+      
+    }
+
+    let observer = new MutationObserver(callback);
+    observer.observe(editor,config)
+    //setTimeout(() => {observer.disconnect();console.log("disconnected")},2000)
+    
   }
+  setTimeout(setObserver,100)
+
 
   return container;
 }
@@ -167,19 +188,28 @@ add 0x0 r1`
 
 
 
-function statusArea() {
-  const status = document.createElement("div");
-  status.className = "editor-status-area";
-  status.id = "code-status-area";
-
-  const statusText = document.createElement("p");
-  statusText.innerText = "Status: Ready";
-  statusText.className = "editor-status-text";
-  statusText.id = "editor-status-text";
+class StatusArea{
   
-  status.appendChild(statusText);
+  
+  constructor() {
+    this.status = document.createElement("div");
+    this.status.className = "editor-status-area";
+    this.status.id = "code-status-area";
+  
+    this.statusText = document.createElement("p");
+    this.statusText.innerText = "Status: Ready";
+    this.statusText.className = "editor-status-text";
+    this.statusText.id = "editor-status-text";
+    
+    this.status.appendChild(this.statusText);
+  
+  }
 
+  node(){
+    return this.status
+  }
+  write(text){
+    this.statusText.innerHTML = text
+  }
 
-
-  return status;
 }

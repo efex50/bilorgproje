@@ -1,5 +1,4 @@
 import { EditorView } from 'codemirror';
-import { dbg } from './debug.js';
 import { codeTable } from './objects.js';
 
 

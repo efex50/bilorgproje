@@ -1,4 +1,3 @@
-import { get } from "http";
 import { parseSmartNumber, readCodeArea } from "../funs";
 import { Flags, Ram, Registers, StoredObjects } from "../objects";
 
@@ -96,6 +95,8 @@ export class SimulatorRunner{
                 case "sub":
                 case "deref":
                 case "imm":
+                case "cmp" :
+                case "test" :
                 case "mov":{
 
                     let o1 = this.handleOperand(parts[1]);
@@ -105,7 +106,6 @@ export class SimulatorRunner{
                     break;
                 }
                 case "ret" :
-                case "cmp" :
                 case "jmp" :
                 case "jne" :
                 case "jeq" :
@@ -160,7 +160,7 @@ export class SimulatorRunner{
     let regs:Registers = this.rgs;
     let ram:Ram = this.ram;
     switch(code){
-        case "inc":
+        case "inc":{
             if (ops.o1.type === "register"){
                 let r = ops.o1.value as string;
                 regs[r] += 1;
@@ -169,7 +169,8 @@ export class SimulatorRunner{
                 this.setToRam(id, this.getFromRam(id) + 1);
             }
             break;
-        case "add":
+        }
+        case "add":{
             if (ops.o2 === undefined){
                 throw new Error("add requires two operands");
             }
@@ -193,7 +194,8 @@ export class SimulatorRunner{
                 }
             }
             break;
-        case "sub":
+        }
+        case "sub":{
             if (ops.o2 === undefined){
                 throw new Error("sub requires two operands");
             }
@@ -217,7 +219,8 @@ export class SimulatorRunner{
                 }
             }
             break;
-        case "mov":
+        }
+        case "mov":{
             if (ops.o2 === undefined){
                 throw new Error("mov requires two operands");
             }
@@ -249,6 +252,7 @@ export class SimulatorRunner{
                 }
             }
             break;
+        }
         case "imm":{
             if (ops.o2 === undefined){
                 throw new Error("imm requires two operands");
@@ -269,62 +273,37 @@ export class SimulatorRunner{
             }
             break;
         }
-        case "deref":
+        case "deref":{
             if (ops.o2 === undefined){
                 throw new Error("deref requires two operands");
             }
-            if (ops.o1.type === "register"){
-                let r = ops.o1.value as string;
-                if (ops.o2.type === "register"){
-                    console.log("t1");
-                    
-                    let r2 = ops.o2.value as string;
-                    regs[r] = ram.getId(regs[r2]);
-                }else{
-                    console.log("t2");
-                    
-                    let id = ops.o2.value as number;
-                    regs[r] = this.getFromRam(this.getFromRam(id));
-                }
-            }else{
-                if (ops.o2.type === "register"){
-                    let r2 = ops.o2.value as string;
-                    let readedPtr = regs[r2];
-                    console.log("ptr holder addr:",readedPtr);
-                    let derefedData = this.getFromRam(readedPtr as number)
-                    console.log("derefed:",derefedData);
-                    
-                    
-                    let target = ops.o1.value as number;
-                    this.setToRam(target,derefedData);
-                }else{
-                    let readedPtr = ops.o2.value;
-                    console.log("ptr holder addr:",readedPtr);
-                    let derefedPtr = this.getFromRam(readedPtr as number)
-                    console.log("derefed:",derefedPtr);
-                    
-                    
-                    let target = ops.o1.value as number;
-                    this.setToRam(target,this.getFromRam(derefedPtr));
-                }
-            }
+            let from = this.getNumFromOperand(ops.o2);
+            let to = ops.o1;
+            console.log(from);
+            
+            
             break;
-        case "cmp":
+        }
+        case "cmp":{
             if (ops.o2 === undefined){
                 throw new Error("cmp requires two operands");
             }
+            
             let flags = compareNums(this.getNumFromOperand(ops.o1),this.getNumFromOperand(ops.o2));
             this.flags = flags;
-            console.log(this.flags);
             
             break;
-        case "test":
+        }
+        case "test":{
             let flags2 = compareNums(this.getNumFromOperand(ops.o1),0);
+            flags2.zero = flags2.parity;
             this.flags = flags2;
             console.log(this.flags);
 
             break;
+        }
         case "jmp":{
+            
             if (this.labels[ops.label as string] !== undefined){
                 console.log("İTS A LABEL");
                 this.rgs.ctr = this.labels[ops.label as string]
