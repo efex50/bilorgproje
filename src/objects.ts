@@ -1,5 +1,6 @@
 import { EditorView } from "codemirror";
 import { SimulatorRunner } from "./simulator/simulator";
+import { Cache } from "./cache";
 
   
 
@@ -99,6 +100,24 @@ export class Table{
 
         return this.arr[row][col];
     }
+    getRenderlessId(id:number):Content{
+        let {row, col} = this.getRowCol(id);
+        return this.getRenderless(row,col);
+
+    }
+    getRenderless(row:number,col:number):Content{
+        if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) {
+            throw new Error('Invalid line or row index');
+        }
+        
+        // 🛠 Trigger animation on the real cell
+        const cellId = this.cellIdGen(row,col);
+        
+        const cell = document.getElementById(cellId);
+        return this.arr[row][col];
+
+    }
+    //setRenderless(){}
     render() {
         
         // Create the table element
@@ -177,7 +196,7 @@ export class Table{
         
         return `<div class="red-text">0x${args.id.toString(16).padStart(2, '0')}:</div>${args.content}`;
     }
-    contentGen(args:{ctr:number,i,j}):Content {
+    contentGen(args:{ctr:number,i:number,j:number}):Content {
         let {ctr,i,j} = args;
         let a :Content =  { content: `${i + 1},${j + 1}`,id:ctr };
         return a;
@@ -187,12 +206,14 @@ export class Table{
 
 export class Ram{
     table:Table;
+    cache:Cache;
     constructor(rows:number,cols:number,name:string,tableId:string,classes:string[] = []){
-        
-        
         this.table = new Table(rows,cols,name,tableId,classes);
         this.table.contentGen = zeroContent;
         this.table.init();
+    }
+    setCache(c:Cache){
+        this.cache = c;
     }
     getId(id:number):Content {
         // todo trigger cache
@@ -209,14 +230,11 @@ export class Ram{
     }
 }
 
-function zeroContent(args:{ctr:number,i,j}):Content {
+function zeroContent(args:{ctr:number,i:number,j:number}):Content {
 
     return { content: "0", id: args.ctr };
 }
 
-export class Program{
-
-}
 export class Content{
     content: string;
     id: number; 
@@ -372,9 +390,7 @@ export class Registers {
         this._rbp = value;
         this.table.setId(10, `${this._rbp}`);
     }
-    set ctr(value: number) {
-        console.log("set ctr",value);
-        
+    set ctr(value: number) {        
         this._ctr = value;
         this.table.setId(11, `${this._ctr}`);
     }
@@ -397,15 +413,6 @@ export class Registers {
 
 }
 
-export enum CacheType {
-    FIFO,
-    LRU
-}
-
-export class Cache{
-    private _type : CacheType = CacheType.FIFO;// fifo , lru
-
-}
 
 
 

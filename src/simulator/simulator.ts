@@ -31,6 +31,8 @@ export class SimulatorRunner{
         this.speed = speed;
 
     }
+
+    
     reset(){
         this.flags.reset();
         this.rgs.reset();
@@ -42,12 +44,15 @@ export class SimulatorRunner{
         this.rgs  = StoredObjects["registers"];
         this.ram  = StoredObjects["ram"];
         this.cache = StoredObjects["cache1"];
+        console.log(program);
+        
         if (program !== undefined){
             let ctr = 0;
             for (let x in program){
-                let p = x.split(' ');
+                let p = program[x].split(' ');
                 if (p[0] === "lbl"){
-                    this.labels[p[0]] = ctr
+                    
+                    this.labels[p[1]] = ctr
                 }
                 ctr++;
             }
@@ -86,41 +91,43 @@ export class SimulatorRunner{
             end = true;
         }else if(line.length === 0){
         }else{
-            let parts = line.split(" ");
-            switch(parts[0]){
-                case "lbl":
-                    this.labels[parts[1]] = this.rgs.ctr;
-                    break;
-                case "add":
-                case "sub":
-                case "deref":
-                case "imm":
-                case "cmp" :
-                case "test" :
-                case "mov":{
+            if (!(line[0] === ';')){
+                let parts = line.split(" ");
+                switch(parts[0]){
+                    case "lbl":
+                        this.labels[parts[1]] = this.rgs.ctr;
+                        break;
+                    case "add":
+                    case "sub":
+                    case "deref":
+                    case "imm":
+                    case "cmp" :
+                    case "test" :
+                    case "mov":{
 
-                    let o1 = this.handleOperand(parts[1]);
-                    let o2 = this.handleOperand(parts[2]);
-                    
-                    this.moveOperands(parts[0],{o1,o2,label:undefined});
-                    break;
+                        let o1 = this.handleOperand(parts[1]);
+                        let o2 = this.handleOperand(parts[2]);
+
+                        this.moveOperands(parts[0],{o1,o2,label:undefined});
+                        break;
+                    }
+                    case "ret" :
+                    case "jmp" :
+                    case "je"  :
+                    case "jne" :
+                    case "jgt" :
+                    case "jlt" :
+                    case "call":
+                    case "inc" :
+                        let o1 = this.handleOperand(parts[1]);
+                        this.moveOperands(parts[0],{o1,o2:undefined,label:parts[1]});
+                        break;
+                    default:
+                        throw new Error("Unknown instruction: " + parts[0]);
+
                 }
-                case "ret" :
-                case "jmp" :
-                case "jne" :
-                case "jeq" :
-                case "jgt" :
-                case "jlt" :
-                case "call":
-                case "inc" :
-                    let o1 = this.handleOperand(parts[1]);
-                    this.moveOperands(parts[0],{o1,o2:undefined,label:parts[1]});
-                    break;
-                default:
-                    throw new Error("Unknown instruction: " + parts[0]);
-                
+                console.log(parts);
             }
-            console.log(parts);
             
         }
         this.rgs.ctr += 1;
@@ -280,6 +287,17 @@ export class SimulatorRunner{
             let from = this.getNumFromOperand(ops.o2);
             let to = ops.o1;
             console.log(from);
+            let dereferenced = this.getFromRam(from);
+            console.log("dereferenced:",dereferenced);
+            if (ops.o1.type === "register"){
+                let id = ops.o1.value as string;
+                this.rgs[id] = dereferenced     ;
+            }
+            // ram addres
+            else{
+                let id = ops.o1.value as number;                
+                this.setToRam(id,dereferenced)
+            }
             
             
             break;
@@ -288,10 +306,8 @@ export class SimulatorRunner{
             if (ops.o2 === undefined){
                 throw new Error("cmp requires two operands");
             }
-            
             let flags = compareNums(this.getNumFromOperand(ops.o1),this.getNumFromOperand(ops.o2));
             this.flags = flags;
-            
             break;
         }
         case "test":{
@@ -305,56 +321,77 @@ export class SimulatorRunner{
         case "jmp":{
             
             if (this.labels[ops.label as string] !== undefined){
-                console.log("İTS A LABEL");
                 this.rgs.ctr = this.labels[ops.label as string]
-            }else{
-
-                console.log(this.labels)
-                console.log("label:",ops.o1);
-                
+            }else{                
                 let addr = this.getNumFromOperand(ops.o1);
                 regs.ctr = addr;
+            }
+            break;
+        }
+        case "je":{
+            
+            if (this.flags.parity){
+                if (this.labels[ops.label as string] !== undefined){
+                    this.rgs.ctr = this.labels[ops.label as string]    
+                }else{
+                    let addr = this.getNumFromOperand(ops.o1);
+                    regs.ctr = addr;
+                }
             }
             break;
         }
         case "jne":{
             if (!this.flags.parity){
-                let addr = this.getNumFromOperand(ops.o1);
-                regs.ctr = addr;
-            }
-            break;
-        }
-        case "jeq":{
-            if (this.flags.parity){
-                let addr = this.getNumFromOperand(ops.o1);
-                regs.ctr = addr;
+                if (this.labels[ops.label as string] !== undefined){
+                    this.rgs.ctr = this.labels[ops.label as string]    
+                }else{
+                    let addr = this.getNumFromOperand(ops.o1);
+                    regs.ctr = addr;
+                }
             }
             break;
         }
         case "jgt":{
             if (this.flags.bigger){
-                let addr = this.getNumFromOperand(ops.o1);
-                regs.ctr = addr;
+                if (this.labels[ops.label as string] !== undefined){
+                    this.rgs.ctr = this.labels[ops.label as string]    
+                }else{
+                    let addr = this.getNumFromOperand(ops.o1);
+                    regs.ctr = addr;
+                }
             }
             break;
         }
         case "jlt":{
             if (this.flags.smaller){
-                let addr = this.getNumFromOperand(ops.o1);
-                regs.ctr = addr;
+                if (this.labels[ops.label as string] !== undefined){
+                    this.rgs.ctr = this.labels[ops.label as string]    
+                }else{
+                    let addr = this.getNumFromOperand(ops.o1);
+                    regs.ctr = addr;
+                }
             }
             break;
         }
         case "call":{
-            let addr = this.getNumFromOperand(ops.o1);
+            let addr:number;
+            if (this.labels[ops.label as string] !== undefined){
+                addr = this.labels[ops.label as string]
+            }else{
+                addr = this.getNumFromOperand(ops.o1);
+            }
+            
+
             // the ctr will auto increases by every tick
-            this.setToRam(regs.rsp,regs.ctr-1);
+            this.setToRam(regs.rsp,regs.ctr);
             regs.ctr = addr;
             regs.rsp += 1;
             break;
         }
         case "ret":{
             let addr = this.getFromRam(regs.rsp);
+            console.log(addr);
+            regs.ctr = addr; 
             regs.rsp -= 1;
             break;
         }

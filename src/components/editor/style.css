@@ -22,7 +22,7 @@
   justify-content: left;
   align-items: flex-start;
   flex-direction: row;
-  border: 2px solid #ddd;
+  border-bottom: 2px solid #ddd;
   height: 40px;
 
 }
